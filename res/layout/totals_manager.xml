@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This is the view for the list of spends.
+ -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <ListView android:layout_width="match_parent"
+        android:id="@+id/totalsList"
+        android:layout_height="wrap_content"
+        android:layout_weight="1.0"/>
+
+    <RelativeLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content" >
+
+        <Button android:id="@+id/totalCompleteButton"
+            android:layout_width="70dip"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:text="@string/totalCompleteButtonLabel"/>
+
+        <Button android:id="@+id/totalByMonthButton"
+            android:layout_width="90dip"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@+id/totalCompleteButton"
+            android:layout_toLeftOf="@+id/totalCompleteButton"
+            android:text="@string/totalByMonthButtonLabel"/>
+
+        <Button
+            android:id="@+id/totalByWeekButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@+id/totalCompleteButton"
+            android:layout_toLeftOf="@+id/totalByMonthButton"
+            android:layout_toRightOf="@+id/totalByDayButton"
+            android:text="@string/totalByWeekButtonLabel" />
+
+        <Button
+            android:id="@+id/totalByDayButton"
+            android:layout_width="70dip"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_alignTop="@+id/totalCompleteButton"
+            android:text="@string/totalByDayButtonLabel" />
+
+    </RelativeLayout>
+
+</LinearLayout>
