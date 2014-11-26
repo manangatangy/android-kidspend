@@ -5,21 +5,18 @@
     <string name="addSpendButtonLabel">New Spend</string>
     <string name="listRepeatButtonLabel">Repeats</string>
     <string name="listIoButtonLabel">I/O</string>
-
     <string name="addRepeatButtonLabel">New Repeat</string>
     <string name="totalsButtonLabel">Totals</string>
-
     <string name="spendAdderTitle">New Spend</string>
-
     <string name="repeat_period_label">Period:</string>
     <string name="spend_date_label">Date:</string>
     <string name="spend_pick_date_label">Change Date</string>
     <string name="spend_type_label">Type:</string>
     <string-array name="accounts_array">
-        <item>PERSONAL</item>
-        <item>WAKANUI</item>
-        <item>ST.KILDA</item>
-        <item>NIGHTINGALE</item>
+        <item>DAVID</item>
+        <item>CLAIRE</item>
+        <item>NINA</item>
+        <item>RACHEL</item>
     </string-array>
     <string-array name="periods_array">
         <item>DAY</item>
@@ -28,40 +25,31 @@
         <item>MONTH</item>
     </string-array>
     <string-array name="types_array">
-        <item>PERSONAL:Coffee</item>
-        <item>PERSONAL:WorkLunch</item>
-        <item>PERSONAL:Groceries</item>
-        <item>PERSONAL:Gift</item>
-        <item>PERSONAL:Entertainment</item>
-        <item>PERSONAL:NinaBoard</item>
-        <item>PERSONAL:RachelPhone</item>
-        <item>PERSONAL:BeerWine</item>
-        <item>PERSONAL:Haircut</item>
-        <item>PERSONAL:EatingOut</item>
-        <item>PERSONAL:Petrol</item>
-        <item>PERSONAL:ChildSupport</item>
-        <item>PERSONAL:Footy</item>
-        <item>PERSONAL:Travel</item>
-        <item>WAKANUI:NetRent</item>
-        <item>WAKANUI:WaterRates</item>
-        <item>WAKANUI:CountilRates</item>
-        <item>ST.KILDA:Design</item>
-        <item>NIGHTINGALE:NetRent</item>
-        <item>NIGHTINGALE:WaterRates</item>
-        <item>NIGHTINGALE:CountilRates</item>
+        <item>DAVID:Coffee</item>
+        <item>DAVID:WorkLunch</item>
+        <item>DAVID:Groceries</item>
+        <item>DAVID:Gift</item>
+        <item>DAVID:Entertainment</item>
+        <item>DAVID:BeerWine</item>
+        <item>DAVID:Haircut</item>
+        <item>DAVID:EatingOut</item>
+        <item>DAVID:Diesel</item>
+        <item>DAVID:Travel</item>
+        <item>DAVID:WaterRates</item>
+        <item>DAVID:CouncilRates</item>
+        <item>NINA:Board</item>
+        <item>RACHEL:Phone</item>
+        <item>RACHEL:Cosmetics</item>
     </string-array>
     <string name="spend_amount_label">Amount:</string>
     <string name="spend_ok_label">OK</string>
     <string name="spend_cancel_label">Cancel</string>
-
     <string name="new_type_dialog_title">Add a new spend type</string>
     <string name="new_type_create_label">Add</string>
     <string name="new_type_cancel_label">Cancel</string>
-
     <string name="spendTotalsTitle">Totals</string>
     <string name="totalCompleteButtonLabel">Total</string>
     <string name="totalByMonthButtonLabel">per Month</string>
     <string name="totalByWeekButtonLabel">per Week</string>
     <string name="totalByDayButtonLabel">per Day</string>
-
 </resources>

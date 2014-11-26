@@ -197,7 +197,7 @@ public class SpendManager extends Activity {
         }
         final File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
         path.mkdirs();		// Ensure existence.
-        final String path2 = path + "/expend-*";
+        final String path2 = path + "/kidspend-*";
         AlertDialog.Builder builder = new AlertDialog.Builder(SpendManager.this);
         builder.setMessage((doImport ? "Import (delete existing) from: " : "Export to: ") + path2 + " ?")
                 .setPositiveButton((doImport ? "Import" : "Export"), new DialogInterface.OnClickListener() {
@@ -236,14 +236,14 @@ public class SpendManager extends Activity {
                 try {
                     if (doImport) {
                         int c = 0;
-                        c += doImport(SpendsTableMetaData.SPEND_CONTENT_URI, ioProjSpends, new File(path, "/expend-spends"));
-                        c += doImport(SpendsTableMetaData.REPEAT_CONTENT_URI, ioProjRepeat, new File(path, "/expend-repeat"));
+                        c += doImport(SpendsTableMetaData.SPEND_CONTENT_URI, ioProjSpends, new File(path, "/kidspend-spends"));
+                        c += doImport(SpendsTableMetaData.REPEAT_CONTENT_URI, ioProjRepeat, new File(path, "/kidspend-repeat"));
                         backgroundMessage = "Imported " + c + " records from " + path + "/expends";
                     } else {
                         int c = 0;
-                        c += doExport(SpendsTableMetaData.SPEND_CONTENT_URI, ioProjSpends, new File(path, "/expend-spends"));
-                        c += doExport(SpendsTableMetaData.REPEAT_CONTENT_URI, ioProjRepeat, new File(path, "/expend-repeat"));
-                        backgroundMessage = "Exported " + c + " records to " + path + "/expends";
+                        c += doExport(SpendsTableMetaData.SPEND_CONTENT_URI, ioProjSpends, new File(path, "/kidspend-spends"));
+                        c += doExport(SpendsTableMetaData.REPEAT_CONTENT_URI, ioProjRepeat, new File(path, "/kidspend-repeat"));
+                        backgroundMessage = "Exported " + c + " records to " + path + "/kidspend";
                     }
                 } catch (Exception e) {
                     String error = "Error during " + (doImport ? "import" : "export");

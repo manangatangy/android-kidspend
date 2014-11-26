@@ -11,6 +11,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -59,8 +61,10 @@ public class SpendTotals extends FragmentActivity implements LoaderManager.Loade
     class Formatter {
         private String[] map;
         private String fullTitle;
-        private String totalAmountPerPeriod;
         private String summaryItemTitle;
+
+        private int totalPrecision;
+        private float periodCount;
 
         /**
          * Generates various strings based on the period and dayCount.
@@ -70,12 +74,11 @@ public class SpendTotals extends FragmentActivity implements LoaderManager.Loade
          * @param periodCountPrecision is the number of decimal places in the second part of the full title.
          * @param dayCount for the entire duration
          * @param totalPrecision is the number of decimal places in the amount column.
-         * @param totalAmount is the full amount for the entire duration.
          */
-        public Formatter(String accountName, String title, String periodName, float periodDuration, String periodCountPrecision,
-                         float dayCount, int totalPrecision, float totalAmount) {
+        public Formatter(String title, String periodName, float periodDuration, String periodCountPrecision,
+                         float dayCount, int totalPrecision) {
             // Note that periodDuration will be zero for the "Totals" if there are no spend records (ie dayCount is zero)
-            float periodCount = dayCount / (periodDuration == 0 ? 1 : periodDuration);
+            periodCount = dayCount / (periodDuration == 0 ? 1 : periodDuration);
             map = new String[] {
                     SpendsTableMetaData._ID,
                     SpendsTableMetaData.SPEND_TYPE,
@@ -83,8 +86,6 @@ public class SpendTotals extends FragmentActivity implements LoaderManager.Loade
                             SpendsTableMetaData.SPEND_AMOUNT, periodCount, totalPrecision, SpendsTableMetaData.SPEND_AMOUNT)
             };
 
-            // Note that periodCount (below) will be 0 when there are no spend records (ie dayCount is zero)
-            totalAmountPerPeriod = String.format("%." + totalPrecision + "f", totalAmount/(periodCount == 0 ? 1 : periodCount));
             summaryItemTitle = "TOTAL per " + periodName;
 
             // For the total counts (entire period), show number of days, not number of entire periods (which would be 1)
@@ -92,17 +93,19 @@ public class SpendTotals extends FragmentActivity implements LoaderManager.Loade
                 periodCount = dayCount;
                 summaryItemTitle = "TOTAL";
             }
-            fullTitle = String.format("%s:%s (%." + periodCountPrecision + "f %ss)", accountName, title, periodCount, periodName);
+            fullTitle = String.format("%s (%." + periodCountPrecision + "f %ss)", title, periodCount, periodName);
 
+            this.totalPrecision = totalPrecision;
         }
         public final String[] getMap() {
             return map;
         }
-        public String getFullTitle() {
-            return fullTitle;
+        public String getFullTitle(String accountName) {
+            return accountName + ":" + fullTitle;
         }
         public String getTotalAmountPerPeriod() {
-            return totalAmountPerPeriod;
+            // Note that periodCount (below) will be 0 when there are no spend records (ie dayCount is zero)
+            return String.format("%." + totalPrecision + "f", totalAmount/(periodCount == 0 ? 1 : periodCount));
         }
         public String getSummaryItemTitle() {
             return summaryItemTitle;
@@ -112,9 +115,11 @@ public class SpendTotals extends FragmentActivity implements LoaderManager.Loade
     // This is the Adapter being used to display the list's data.
     private SimpleCursorAdapter mAdapter;
     // This specifies which averaging period to use.
-    private String formatsIndex;
+    private String formatsIndex = KEY_DAY;
     private String currentAccount = "";
+    private float totalAmount = (float) 0.0;
 
+    private String[] accountArray = {};
     private HashMap<String,Formatter> formats = new HashMap<String,Formatter>();
 
     @Override
@@ -126,18 +131,20 @@ public class SpendTotals extends FragmentActivity implements LoaderManager.Loade
         setContentView(R.layout.totals_manager);
         getWindow().setFeatureInt(Window.FEATURE_CUSTOM_TITLE, R.layout.title_totals);
 
+        accountArray = getResources().getStringArray(R.array.accounts_array);
+
         Bundle extras = getIntent().getExtras();
         if (extras != null)
             currentAccount = extras.getString("account");
 
         // Can't calculate these two until the current account is set.
         long dayCount = getDayCount();
-        float totalAmount = getTotalAmount();
+        totalAmount = getTotalAmount();
 
-        formats.put(KEY_DAY, new Formatter(currentAccount, "Daily", "day", DAYS_PER_DAY, "0", dayCount, 1, totalAmount));
-        formats.put(KEY_WEEK, new Formatter(currentAccount, "Weekly", "week", DAYS_PER_WEEK, "1", dayCount, 1, totalAmount));
-        formats.put(KEY_MONTH, new Formatter(currentAccount, "Monthly", "month", DAYS_PER_MONTH, "1", dayCount, 0, totalAmount));
-        formats.put(KEY_TOTAL, new Formatter(currentAccount, "Totals", "day", dayCount, "0", dayCount, 0, totalAmount));
+        formats.put(KEY_DAY, new Formatter("Daily", "day", DAYS_PER_DAY, "0", dayCount, 1));
+        formats.put(KEY_WEEK, new Formatter("Weekly", "week", DAYS_PER_WEEK, "1", dayCount, 1));
+        formats.put(KEY_MONTH, new Formatter("Monthly", "month", DAYS_PER_MONTH, "1", dayCount, 0));
+        formats.put(KEY_TOTAL, new Formatter("Totals", "day", dayCount, "0", dayCount, 0));
 
         // Buttons to change the average period.
         findViewById(R.id.totalByDayButton).setOnClickListener(new View.OnClickListener() {
@@ -182,6 +189,25 @@ public class SpendTotals extends FragmentActivity implements LoaderManager.Loade
 
         getSupportLoaderManager().initLoader(0, null, this);		// Assigns loader callbacks here.
 
+        // Register for long click on the title - changes the account.
+        findViewById(R.id.titleTotalTypeText).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new AlertDialog.Builder(SpendTotals.this)
+                        .setTitle("Select the Account")
+                        .setItems(accountArray, new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int item) {
+                                // Selected was items[item]
+                                currentAccount = accountArray[item];
+                                totalAmount = getTotalAmount();
+                                setActivityTitle();
+                                getSupportLoaderManager().restartLoader(0, null, SpendTotals.this);
+                            }
+                        }).show();
+            }
+        });
+
+
     }
 
     private long getDayCount() {
@@ -193,11 +219,9 @@ public class SpendTotals extends FragmentActivity implements LoaderManager.Loade
 
         String where = "WHERE " + SpendsTableMetaData.SPEND_ACCOUNT + " ='" + currentAccount + "'";
 
-        Cursor cursor = managedQuery(spendsUri, new String[] {
-                SpendProviderMetaData.SpendsTableMetaData.SPEND_DATE
-        },
+        Cursor cursor = managedQuery(spendsUri,
+                new String[] {SpendProviderMetaData.SpendsTableMetaData.SPEND_DATE},
                 " _id in (select min(_id) from spends " + where + " union select max(_id) from spends " + where + " )",
-
                 null, null);
         for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
             int index = cursor.getColumnIndex(SpendProviderMetaData.SpendsTableMetaData.SPEND_DATE);
@@ -218,9 +242,8 @@ public class SpendTotals extends FragmentActivity implements LoaderManager.Loade
     private float getTotalAmount() {
         // Query for the total amount.
         Uri spendsUri = SpendProviderMetaData.SpendsTableMetaData.SPEND_CONTENT_URI;
-        Cursor cursor = managedQuery(spendsUri, new String[] {
-                String.format("TOTAL(%s) as total_amount", SpendsTableMetaData.SPEND_AMOUNT)
-        }, SpendsTableMetaData.SPEND_ACCOUNT + " ='" + currentAccount + "'", null, null);
+        Cursor cursor = managedQuery(spendsUri, new String[] {String.format("TOTAL(%s) as total_amount", SpendsTableMetaData.SPEND_AMOUNT)},
+                SpendsTableMetaData.SPEND_ACCOUNT + " ='" + currentAccount + "'", null, null);
         float totalAmount = 0;
         if (cursor.moveToFirst()) {
             int index = cursor.getColumnIndex("total_amount");
@@ -231,10 +254,11 @@ public class SpendTotals extends FragmentActivity implements LoaderManager.Loade
     }
 
     private void setActivityTitle() {
+        // formatsIndex is the period type; total, month, week, day
         TextView typeView = (TextView)findViewById(R.id.titleTotalTypeText);
         TextView amountView = (TextView)findViewById(R.id.titleTotalAmountText);
 
-        typeView.setText(formats.get(formatsIndex).getFullTitle());
+        typeView.setText(formats.get(formatsIndex).getFullTitle(currentAccount));
         amountView.setText(formats.get(formatsIndex).getTotalAmountPerPeriod());
     }
 
