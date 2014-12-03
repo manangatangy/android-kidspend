@@ -66,6 +66,10 @@ public class SpendTotals extends FragmentActivity implements LoaderManager.Loade
         private int totalPrecision;
         private float periodCount;
 
+        public String toString() {
+            return "{Formatter summaryItemTitle:" + summaryItemTitle + ", periodCount:" + periodCount + ", totalPrecision:" + totalPrecision + "}";
+        }
+
         /**
          * Generates various strings based on the period and dayCount.
          * @param title is the main title (the first part of the full title)
@@ -89,11 +93,12 @@ public class SpendTotals extends FragmentActivity implements LoaderManager.Loade
             summaryItemTitle = "TOTAL per " + periodName;
 
             // For the total counts (entire period), show number of days, not number of entire periods (which would be 1)
+            float pCount = periodCount;
             if ("Totals".equalsIgnoreCase(title)) {
-                periodCount = dayCount;
+                pCount = dayCount;
                 summaryItemTitle = "TOTAL";
             }
-            fullTitle = String.format("%s (%." + periodCountPrecision + "f %ss)", title, periodCount, periodName);
+            fullTitle = String.format("%s (%." + periodCountPrecision + "f %ss)", title, pCount, periodName);
 
             this.totalPrecision = totalPrecision;
         }
@@ -257,6 +262,8 @@ public class SpendTotals extends FragmentActivity implements LoaderManager.Loade
         // formatsIndex is the period type; total, month, week, day
         TextView typeView = (TextView)findViewById(R.id.titleTotalTypeText);
         TextView amountView = (TextView)findViewById(R.id.titleTotalAmountText);
+
+        Log.v(TAG, "formatsIndex:" + formatsIndex + " --> " + formats.get(formatsIndex));
 
         typeView.setText(formats.get(formatsIndex).getFullTitle(currentAccount));
         amountView.setText(formats.get(formatsIndex).getTotalAmountPerPeriod());
