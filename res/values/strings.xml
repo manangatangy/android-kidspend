@@ -17,6 +17,7 @@
         <item>CLAIRE</item>
         <item>NINA</item>
         <item>RACHEL</item>
+        <item>ONEOFFS</item>
     </string-array>
     <string-array name="periods_array">
         <item>DAY</item>
@@ -25,21 +26,31 @@
         <item>MONTH</item>
     </string-array>
     <string-array name="types_array">
-        <item>DAVID:Coffee</item>
-        <item>DAVID:WorkLunch</item>
-        <item>DAVID:Groceries</item>
-        <item>DAVID:Gift</item>
-        <item>DAVID:Entertainment</item>
         <item>DAVID:BeerWine</item>
-        <item>DAVID:Haircut</item>
-        <item>DAVID:EatingOut</item>
+        <item>DAVID:Cleaner</item>
+        <item>DAVID:Coffee</item>
+        <item>DAVID:CouncilRates</item>
         <item>DAVID:Diesel</item>
+        <item>DAVID:EatingOut</item>
+        <item>DAVID:Entertainment</item>
+        <item>DAVID:Gift</item>
+        <item>DAVID:Groceries</item>
+        <item>DAVID:Haircut</item>
+        <item>DAVID:HomeWares</item>
+        <item>DAVID:HealthInsurance</item>
+        <item>DAVID:Oxfam</item>
         <item>DAVID:Travel</item>
         <item>DAVID:WaterRates</item>
-        <item>DAVID:CouncilRates</item>
+        <item>DAVID:WorkLunch</item>
+        <item>DAVID:WorkShop</item>
+        <item>CLAIRE:Debt</item>
         <item>NINA:Board</item>
-        <item>RACHEL:Phone</item>
+        <item>NINA:Debt</item>
         <item>RACHEL:Cosmetics</item>
+        <item>RACHEL:Debt</item>
+        <item>RACHEL:Gift</item>
+        <item>RACHEL:Phone</item>
+        <item>ONEOFFS:Furniture</item>
     </string-array>
     <string name="spend_amount_label">Amount:</string>
     <string name="spend_ok_label">OK</string>
