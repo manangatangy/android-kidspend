@@ -11,6 +11,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.database.Cursor;
@@ -144,7 +145,7 @@ public class SpendTotals extends FragmentActivity implements LoaderManager.Loade
 
         // Can't calculate these two until the current account is set.
         long dayCount = getDayCount();
-        totalAmount = getTotalAmount();
+        totalAmount = getTotalAmount(this, currentAccount);
 
         formats.put(KEY_DAY, new Formatter("Daily", "day", DAYS_PER_DAY, "0", dayCount, 1));
         formats.put(KEY_WEEK, new Formatter("Weekly", "week", DAYS_PER_WEEK, "1", dayCount, 1));
@@ -200,11 +201,11 @@ public class SpendTotals extends FragmentActivity implements LoaderManager.Loade
             public void onClick(View v) {
                 new AlertDialog.Builder(SpendTotals.this)
                         .setTitle("Select the Account")
-                        .setItems(accountArray, new DialogInterface.OnClickListener() {
+                        .setItems(getAccountNamesWithTotals(SpendTotals.this, accountArray), new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int item) {
                                 // Selected was items[item]
                                 currentAccount = accountArray[item];
-                                totalAmount = getTotalAmount();
+                                totalAmount = getTotalAmount(SpendTotals.this, currentAccount);
                                 setActivityTitle();
                                 getSupportLoaderManager().restartLoader(0, null, SpendTotals.this);
                             }
@@ -244,11 +245,41 @@ public class SpendTotals extends FragmentActivity implements LoaderManager.Loade
         return dayCount;
     }
 
-    private float getTotalAmount() {
+    public static String[] getAccountNamesWithTotals(Activity activity, String[] accountNames) {
+        String[] tempAccount = new String[accountNames.length];
+        float[] amounts = new float[accountNames.length];
+        float maxAmount = 0;
+        float totalSpend = 0;
+        for (int i = 0; i < accountNames.length; i++) {
+            String account = accountNames[i];
+            if ("DAVID".equals(account)) {
+                tempAccount[i] = account;
+            } else {
+                amounts[i] = getTotalAmount(activity, account);
+                totalSpend += amounts[i];
+                tempAccount[i] = String.format("%s: %.0f", account, amounts[i]);
+                if (maxAmount < amounts[i]) {
+                    maxAmount = amounts[i];
+                }
+            }
+        }
+        for (int i = 0; i < accountNames.length; i++) {
+            String account = accountNames[i];
+            if ("DAVID".equals(account)) {
+                float pendingSpend = (accountNames.length - 1)*maxAmount - totalSpend;
+                tempAccount[i] = String.format("%s ++%.0f", tempAccount[i], pendingSpend);
+            } else {
+                tempAccount[i] = String.format("%s +%.0f", tempAccount[i], maxAmount - amounts[i]);
+            }
+        }
+        return tempAccount;
+    }
+
+    public static float getTotalAmount(Activity activity, String accountName) {
         // Query for the total amount.
         Uri spendsUri = SpendProviderMetaData.SpendsTableMetaData.SPEND_CONTENT_URI;
-        Cursor cursor = managedQuery(spendsUri, new String[] {String.format("TOTAL(%s) as total_amount", SpendsTableMetaData.SPEND_AMOUNT)},
-                SpendsTableMetaData.SPEND_ACCOUNT + " ='" + currentAccount + "'", null, null);
+        Cursor cursor = activity.managedQuery(spendsUri, new String[]{String.format("TOTAL(%s) as total_amount", SpendsTableMetaData.SPEND_AMOUNT)},
+                SpendsTableMetaData.SPEND_ACCOUNT + " ='" + accountName + "'", null, null);
         float totalAmount = 0;
         if (cursor.moveToFirst()) {
             int index = cursor.getColumnIndex("total_amount");

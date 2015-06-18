@@ -164,7 +164,7 @@ public class SpendManager extends Activity {
             public void onClick(View v) {
                 new AlertDialog.Builder(SpendManager.this)
                         .setTitle("Select the Account")
-                        .setItems(accountArray, new DialogInterface.OnClickListener() {
+                        .setItems(SpendTotals.getAccountNamesWithTotals(SpendManager.this, accountArray), new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int item) {
                                 // Selected was items[item]
                                 setActivityTitleAndRefreshList(item);
