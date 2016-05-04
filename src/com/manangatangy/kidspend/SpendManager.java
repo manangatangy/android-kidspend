@@ -49,8 +49,10 @@ public class SpendManager extends Activity implements SuccessfulExportListener {
     public static final String SUM_TOTAL = "Sum_Total";
     public static final String LAST_BACKUP_DATE = "Last_Backup_Date";
     public static final String BACKUP_TRIGGER_AMOUNT = "Backup_Trigger_Date";
+    public static final String OISAFE_LAST_MODIFIED = "Oisafe_Last_Modified";
 
-    static final int SEND_EMAIL_REQUEST = 1;
+    static final int SEND_KIDSPEND_BACKUP_REQUEST = 1;
+    static final int SEND_OISAFE_BACKUP_REQUEST = 2;
 
     private Button mAddSpendButton;
     private Button mRepeatButton;
@@ -193,6 +195,7 @@ public class SpendManager extends Activity implements SuccessfulExportListener {
         float oldTotal = settings.getFloat(SUM_TOTAL, 0);
         String lastBackupDate = settings.getString(LAST_BACKUP_DATE, "<never>");
         float backupTriggerAmount = settings.getFloat(BACKUP_TRIGGER_AMOUNT, 100);
+        long oldOisafeLastModified = settings.getLong(OISAFE_LAST_MODIFIED, 0);
 
         /*
             public static final String LAST_BACKUP_DATE = "Last_Backup_Date";
@@ -216,76 +219,115 @@ public class SpendManager extends Activity implements SuccessfulExportListener {
                             dialog.cancel();
                         }
                     }).show();
-
         }
+
+        File download = checkAndGetDownloadsPath();
+        if (download != null) {
+            final File[] oisafe = new File[1];
+            oisafe[0] = new File(download, "oisafe.xml");
+            if (oisafe[0].exists()) {
+                newOisafeLastModified = oisafe[0].lastModified();
+                if (newOisafeLastModified != oldOisafeLastModified) {
+                    // The oisafe file has been modified since the lastbackup, offer to make another backup.
+                    String date = sdf2.format(new Date(newOisafeLastModified));
+                    final String subject = String.format("oisafe backup (created %s)", date);
+                    AlertDialog.Builder builder = new AlertDialog.Builder(SpendManager.this);
+                    builder.setMessage("Email new backup of oisafe.xml?")
+                            .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int idx) {
+                                    doEmail(SEND_OISAFE_BACKUP_REQUEST, subject, oisafe);
+                                }
+                            })
+                            .setNeutralButton("Cancel", new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int id) {
+                                    dialog.cancel();
+                                }
+                            }).show();
+
+                }
+            }
+        }
+
         setActivityTitleAndRefreshList(0);
     }
 
     private float newTotal;
+    private long newOisafeLastModified;
+    private SimpleDateFormat sdf1 = new SimpleDateFormat("EEE MMM d HH:mm yyyy");
+    private SimpleDateFormat sdf2 = new SimpleDateFormat("yyyy MMM d HH:mm");
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         // Check which request we're responding to
-        if (requestCode == SEND_EMAIL_REQUEST) {
-            // Make sure the request was successful
-//            if (resultCode == RESULT_OK) {
-                // Store newest total.
-                float newTotal = SpendTotals.getTotalSumOfAccounts(this, accountArray);
+        if (requestCode == SEND_KIDSPEND_BACKUP_REQUEST) {
+            float newTotal = SpendTotals.getTotalSumOfAccounts(this, accountArray);
 
-                SharedPreferences settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-                SharedPreferences.Editor editor = settings.edit();
-                editor.putFloat(SUM_TOTAL, newTotal);
-                SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM d HH:mm yyyy");
-                String date = sdf.format(new Date());
-                editor.putString(LAST_BACKUP_DATE, date);
-                editor.commit();
-//            }
+            SharedPreferences settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            SharedPreferences.Editor editor = settings.edit();
+            editor.putFloat(SUM_TOTAL, newTotal);
+            String date = sdf1.format(new Date());
+            editor.putString(LAST_BACKUP_DATE, date);
+            editor.commit();
+        }
+        if (requestCode == SEND_OISAFE_BACKUP_REQUEST) {
+            SharedPreferences settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            SharedPreferences.Editor editor = settings.edit();
+            editor.putLong(OISAFE_LAST_MODIFIED, newOisafeLastModified);
+            editor.commit();
         }
     }
 
     public static final String backupTargetEmail = "david.x.weiss@gmail.com";
 
     public void onExport(File[] pathsToExport) {
-        ArrayList<Uri> uris = new ArrayList<Uri>();
-        uris.add(Uri.fromFile(pathsToExport[0]));
-        uris.add(Uri.fromFile(pathsToExport[1]));
+        doEmail(SEND_KIDSPEND_BACKUP_REQUEST, String.format("kidspend backup ($%.0f)", newTotal), pathsToExport);
+//        ArrayList<Uri> uris = new ArrayList<Uri>();
+//        for (File path : pathsToExport) {
+//            uris.add(Uri.fromFile(path));
+//        }
+//        Intent i = new Intent(Intent.ACTION_SEND_MULTIPLE);
+//        i.setType("*/*");
+//        i.putExtra(Intent.EXTRA_STREAM, uris);
+//        i.putExtra(Intent.EXTRA_EMAIL, new String[] {
+//                backupTargetEmail
+//        });
+//        i.putExtra(Intent.EXTRA_SUBJECT, String.format("kidspend backup ($%.0f)", newTotal));
+//        Intent emailOnlyIntent = createEmailOnlyChooserIntent(i, "Send via email");
+//
+//        startActivityForResult(emailOnlyIntent, SEND_KIDSPEND_BACKUP_REQUEST);
+    }
 
+    private void doEmail(int reqCode, String subject, File[] pathsToBackup) {
+        ArrayList<Uri> uris = new ArrayList<Uri>();
+        for (File path : pathsToBackup) {
+            uris.add(Uri.fromFile(path));
+        }
         Intent i = new Intent(Intent.ACTION_SEND_MULTIPLE);
         i.setType("*/*");
         i.putExtra(Intent.EXTRA_STREAM, uris);
-        i.putExtra(Intent.EXTRA_EMAIL, new String[] {
-                backupTargetEmail
-        });
-        i.putExtra(Intent.EXTRA_SUBJECT, String.format("kidspend backup ($%.0f)", newTotal));
-//        i.putExtra(Intent.EXTRA_TEXT, "backup files of kidspend");
-
+        i.putExtra(Intent.EXTRA_EMAIL, new String[] { backupTargetEmail });
+        i.putExtra(Intent.EXTRA_SUBJECT, subject);
         Intent emailOnlyIntent = createEmailOnlyChooserIntent(i, "Send via email");
-
-        startActivityForResult(emailOnlyIntent, SEND_EMAIL_REQUEST);
-//        Toast.makeText(getBaseContext(), "pathsToExport=" + pathsToExport[0] + ", " + pathsToExport[1], Toast.LENGTH_LONG).show();
+        startActivityForResult(emailOnlyIntent, reqCode);
     }
 
     ProgressDialog progress;
 
-//    private void importExportBackground(final boolean doImport) {
-//        Thread thread =  new Thread(null, new Runnable() {
-//            @Override
-//            public void run() {
-//                importExport(doImport, null);
-//                //runOnUiThread(loadAdapter);
-//            }
-//        }, "background-import-export");
-//        progress = ProgressDialog.show(this, "Please wait...", (doImport ? "Importing..." : "Exporting..."), true);
-//        thread.start();
-//    }
-
-    private void importExport(final boolean doImport, SuccessfulExportListener successfulExportListener) {
+    private File checkAndGetDownloadsPath() {
         if (!Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
             Toast.makeText(getBaseContext(), "ExternalStorageMedia not available (!MEDIA_MOUNTED)", Toast.LENGTH_LONG).show();
-            return;
+            return null;
         }
         final File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
         path.mkdirs();		// Ensure existence.
+        return path;
+    }
+
+    private void importExport(final boolean doImport, SuccessfulExportListener successfulExportListener) {
+        final File path = checkAndGetDownloadsPath();
+        if (path == null) {
+            return;
+        }
         if (successfulExportListener != null) {
             doBackgroundExportImport(path, false, successfulExportListener);
         } else {
