@@ -275,6 +275,14 @@ public class SpendTotals extends FragmentActivity implements LoaderManager.Loade
         return tempAccount;
     }
 
+    public static float getTotalSumOfAccounts(Activity activity, String[] accountNames) {
+        float totalSpend = 0;
+        for (int i = 0; i < accountNames.length; i++) {
+            totalSpend += getTotalAmount(activity, accountNames[i]);
+        }
+        return totalSpend;
+    }
+
     public static float getTotalAmount(Activity activity, String accountName) {
         // Query for the total amount.
         Uri spendsUri = SpendProviderMetaData.SpendsTableMetaData.SPEND_CONTENT_URI;

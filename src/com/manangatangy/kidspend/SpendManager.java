@@ -6,6 +6,11 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Stack;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -16,10 +21,13 @@ import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.ResolveInfo;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Parcelable;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,9 +42,15 @@ import android.widget.Toast;
 
 import com.manangatangy.kidspend.SpendProviderMetaData.SpendsTableMetaData;
 
-public class SpendManager extends Activity {
+public class SpendManager extends Activity implements SuccessfulExportListener {
 
     public static final String TAG = "SpendManager";
+    public static final String PREFS_NAME = "Spend_Managerl";
+    public static final String SUM_TOTAL = "Sum_Total";
+    public static final String LAST_BACKUP_DATE = "Last_Backup_Date";
+    public static final String BACKUP_TRIGGER_AMOUNT = "Backup_Trigger_Date";
+
+    static final int SEND_EMAIL_REQUEST = 1;
 
     private Button mAddSpendButton;
     private Button mRepeatButton;
@@ -142,12 +156,12 @@ public class SpendManager extends Activity {
                 builder.setMessage("Which type of I/O ?")
                         .setPositiveButton("Import (!!!)", new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int idx) {
-                                importExport(true);
+                                importExport(true, null);
                             }
                         })
                         .setNegativeButton("Export", new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
-                                importExport(false);
+                                importExport(false, null);
                             }
                         })
                         .setNeutralButton("Cancel", new DialogInterface.OnClickListener() {
@@ -173,43 +187,122 @@ public class SpendManager extends Activity {
             }
         });
 
+        // Check if it's time to send the backup email
+        // This will be so, if the total amount has changed more than 100 since the last backup email was sent
+        SharedPreferences settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        float oldTotal = settings.getFloat(SUM_TOTAL, 0);
+        String lastBackupDate = settings.getString(LAST_BACKUP_DATE, "<never>");
+        float backupTriggerAmount = settings.getFloat(BACKUP_TRIGGER_AMOUNT, 100);
+
+        /*
+            public static final String LAST_BACKUP_DATE = "Last_Backup_Date";
+    public static final String BACKUP_TRIGGER_AMOUNT = "Backup_Trigger_Date";
+
+         */
+        newTotal = SpendTotals.getTotalSumOfAccounts(this, accountArray);
+
+        if (Math.abs(newTotal - oldTotal) > backupTriggerAmount) {
+            String msg = String.format("Total now: %.0f\nemail backup to\n%s ?\n(last: %s)", newTotal, backupTargetEmail, lastBackupDate);
+            AlertDialog.Builder builder = new AlertDialog.Builder(SpendManager.this);
+            builder.setMessage(msg)
+                    .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int idx) {
+                            // First create a backup
+                            importExport(false, SpendManager.this);
+                        }
+                    })
+                    .setNeutralButton("Cancel", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            dialog.cancel();
+                        }
+                    }).show();
+
+        }
         setActivityTitleAndRefreshList(0);
+    }
+
+    private float newTotal;
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // Check which request we're responding to
+        if (requestCode == SEND_EMAIL_REQUEST) {
+            // Make sure the request was successful
+//            if (resultCode == RESULT_OK) {
+                // Store newest total.
+                float newTotal = SpendTotals.getTotalSumOfAccounts(this, accountArray);
+
+                SharedPreferences settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+                SharedPreferences.Editor editor = settings.edit();
+                editor.putFloat(SUM_TOTAL, newTotal);
+                SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM d HH:mm yyyy");
+                String date = sdf.format(new Date());
+                editor.putString(LAST_BACKUP_DATE, date);
+                editor.commit();
+//            }
+        }
+    }
+
+    public static final String backupTargetEmail = "david.x.weiss@gmail.com";
+
+    public void onExport(File[] pathsToExport) {
+        ArrayList<Uri> uris = new ArrayList<Uri>();
+        uris.add(Uri.fromFile(pathsToExport[0]));
+        uris.add(Uri.fromFile(pathsToExport[1]));
+
+        Intent i = new Intent(Intent.ACTION_SEND_MULTIPLE);
+        i.setType("*/*");
+        i.putExtra(Intent.EXTRA_STREAM, uris);
+        i.putExtra(Intent.EXTRA_EMAIL, new String[] {
+                backupTargetEmail
+        });
+        i.putExtra(Intent.EXTRA_SUBJECT, String.format("kidspend backup ($%.0f)", newTotal));
+//        i.putExtra(Intent.EXTRA_TEXT, "backup files of kidspend");
+
+        Intent emailOnlyIntent = createEmailOnlyChooserIntent(i, "Send via email");
+
+        startActivityForResult(emailOnlyIntent, SEND_EMAIL_REQUEST);
+//        Toast.makeText(getBaseContext(), "pathsToExport=" + pathsToExport[0] + ", " + pathsToExport[1], Toast.LENGTH_LONG).show();
     }
 
     ProgressDialog progress;
 
-    private void importExportBackground(final boolean doImport) {
-        Thread thread =  new Thread(null, new Runnable() {
-            @Override
-            public void run() {
-                importExport(doImport);
-                //runOnUiThread(loadAdapter);
-            }
-        }, "background-import-export");
-        progress = ProgressDialog.show(this, "Please wait...", (doImport ? "Importing..." : "Exporting..."), true);
-        thread.start();
-    }
+//    private void importExportBackground(final boolean doImport) {
+//        Thread thread =  new Thread(null, new Runnable() {
+//            @Override
+//            public void run() {
+//                importExport(doImport, null);
+//                //runOnUiThread(loadAdapter);
+//            }
+//        }, "background-import-export");
+//        progress = ProgressDialog.show(this, "Please wait...", (doImport ? "Importing..." : "Exporting..."), true);
+//        thread.start();
+//    }
 
-    private void importExport(final boolean doImport) {
+    private void importExport(final boolean doImport, SuccessfulExportListener successfulExportListener) {
         if (!Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
             Toast.makeText(getBaseContext(), "ExternalStorageMedia not available (!MEDIA_MOUNTED)", Toast.LENGTH_LONG).show();
             return;
         }
         final File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
         path.mkdirs();		// Ensure existence.
-        final String path2 = path + "/kidspend-*";
-        AlertDialog.Builder builder = new AlertDialog.Builder(SpendManager.this);
-        builder.setMessage((doImport ? "Import (delete existing) from: " : "Export to: ") + path2 + " ?")
-                .setPositiveButton((doImport ? "Import" : "Export"), new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int idx) {
-                        doBackgroundExportImport(path, doImport);
-                    }
-                })
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        dialog.cancel();
-                    }
-                }).show();
+        if (successfulExportListener != null) {
+            doBackgroundExportImport(path, false, successfulExportListener);
+        } else {
+            final String path2 = path + "/kidspend-*";
+            AlertDialog.Builder builder = new AlertDialog.Builder(SpendManager.this);
+            builder.setMessage((doImport ? "Import (delete existing) from: " : "Export to: ") + path2 + " ?")
+                    .setPositiveButton((doImport ? "Import" : "Export"), new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int idx) {
+                            doBackgroundExportImport(path, doImport, null);
+                        }
+                    })
+                    .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            dialog.cancel();
+                        }
+                    }).show();
+        }
     }
 
     static final String[] ioProjSpends = new String[] {
@@ -228,9 +321,15 @@ public class SpendManager extends Activity {
 
     private String backgroundMessage;
 
-    private void doBackgroundExportImport(final File path, final boolean doImport) {
+    // If the successfulExportListener is null, then prompt for which type of i/o.
+    // Otherwise, assume the i/o is for export, and should the export be successful,
+    // invoke the callback passing the array of file paths which were created and exorted to.
+    // Note that the callback is invoked on the uithread.
+    private void doBackgroundExportImport(final File path, final boolean doImport, final SuccessfulExportListener successfulExportListener) {
         progress = ProgressDialog.show(this, "Please wait...", (doImport ? "Importing..." : "Exporting..."), true);
         new Thread(null, new Runnable() {
+            boolean succeeded = false;
+            File[] pathsExported = new File[2];
             @Override
             public void run() {
                 try {
@@ -241,10 +340,11 @@ public class SpendManager extends Activity {
                         backgroundMessage = "Imported " + c + " records from " + path + "/expends";
                     } else {
                         int c = 0;
-                        c += doExport(SpendsTableMetaData.SPEND_CONTENT_URI, ioProjSpends, new File(path, "/kidspend-spends"));
-                        c += doExport(SpendsTableMetaData.REPEAT_CONTENT_URI, ioProjRepeat, new File(path, "/kidspend-repeat"));
+                        c += doExport(SpendsTableMetaData.SPEND_CONTENT_URI, ioProjSpends, pathsExported[0] = new File(path, "/kidspend-spends"));
+                        c += doExport(SpendsTableMetaData.REPEAT_CONTENT_URI, ioProjRepeat, pathsExported[1] = new File(path, "/kidspend-repeat"));
                         backgroundMessage = "Exported " + c + " records to " + path + "/kidspend";
                     }
+                    succeeded = true;
                 } catch (Exception e) {
                     String error = "Error during " + (doImport ? "import" : "export");
                     Log.w("ExternalStorage", error, e);
@@ -255,7 +355,11 @@ public class SpendManager extends Activity {
                     @Override
                     public void run() {
                         adapter.notifyDataSetChanged();
-                        Toast.makeText(getBaseContext(), backgroundMessage, Toast.LENGTH_LONG).show();
+                        if (successfulExportListener == null || !succeeded) {
+                            Toast.makeText(getBaseContext(), backgroundMessage, Toast.LENGTH_LONG).show();
+                        } else {
+                            successfulExportListener.onExport(pathsExported);
+                        }
                     }
                 });
             }
@@ -395,4 +499,28 @@ public class SpendManager extends Activity {
         return child.getText().toString();
     }
 
+    // from http://stackoverflow.com/a/12804063
+    public Intent createEmailOnlyChooserIntent(Intent source, CharSequence chooserTitle) {
+        Stack<Intent> intents = new Stack<Intent>();
+        Intent i = new Intent(Intent.ACTION_SENDTO, Uri.fromParts("mailto", "info@domain.com", null));
+        List<ResolveInfo> activities = getPackageManager().queryIntentActivities(i, 0);
+
+        for(ResolveInfo ri : activities) {
+            Intent target = new Intent(source);
+            target.setPackage(ri.activityInfo.packageName);
+            intents.add(target);
+        }
+
+        if(!intents.isEmpty()) {
+            Intent chooserIntent = Intent.createChooser(intents.remove(0), chooserTitle);
+            chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intents.toArray(new Parcelable[intents.size()]));
+            return chooserIntent;
+        } else {
+            return Intent.createChooser(source, chooserTitle);
+        }
+    }
+}
+
+interface SuccessfulExportListener {
+    void onExport(File[] pathsExported);
 }
