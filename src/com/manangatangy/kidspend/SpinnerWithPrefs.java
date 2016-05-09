@@ -132,7 +132,7 @@ public class SpinnerWithPrefs {
         ArrayList<String> arrayList = new ArrayList<String>();		// Arrays.asList(spendTypesArray)
         for (String spendType : typesArray) {
             String stripped = hasPrefix(spendType, currentPrefix);
-            if (!TextUtils.isEmpty(stripped)) {
+            if (!TextUtils.isEmpty(stripped) && !arrayList.contains(stripped)) {
                 arrayList.add(stripped);
             }
         }
@@ -145,7 +145,7 @@ public class SpinnerWithPrefs {
         for (String extraType : extraTypes.split(",")) {
             if (!TextUtils.isEmpty(extraType)) {
                 String stripped = hasPrefix(extraType, currentPrefix);
-                if (!TextUtils.isEmpty(stripped)) {
+                if (!TextUtils.isEmpty(stripped) && !arrayList.contains(stripped)) {
                     //Log.d(TAG, "adding: " + extraType);
                     arrayList.add(stripped);
                 }

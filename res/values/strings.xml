@@ -18,6 +18,7 @@
         <item>NINA</item>
         <item>RACHEL</item>
         <item>ONEOFFS</item>
+        <item>TRIP2015</item>
     </string-array>
     <string-array name="periods_array">
         <item>DAY</item>
@@ -27,30 +28,64 @@
     </string-array>
     <string-array name="types_array">
         <item>DAVID:BeerWine</item>
+        <item>DAVID:Bike</item>
+        <item>DAVID:Car</item>
         <item>DAVID:Cleaner</item>
+        <item>DAVID:Clothes</item>
         <item>DAVID:Coffee</item>
         <item>DAVID:CouncilRates</item>
         <item>DAVID:Diesel</item>
         <item>DAVID:EatingOut</item>
+        <item>DAVID:Electricity</item>
         <item>DAVID:Entertainment</item>
+        <item>DAVID:GardenLandscape</item>
+        <item>DAVID:Gas</item>
         <item>DAVID:Gift</item>
         <item>DAVID:Groceries</item>
+        <item>DAVID:Gym</item>
         <item>DAVID:Haircut</item>
+        <item>DAVID:HolidayAccom</item>
         <item>DAVID:HomeWares</item>
         <item>DAVID:HealthInsurance</item>
+        <item>DAVID:Insurance</item>
+        <item>DAVID:ISP</item>
+        <item>DAVID:Medical</item>
         <item>DAVID:Oxfam</item>
+        <item>DAVID:Pets</item>
+        <item>DAVID:Phone</item>
+        <item>DAVID:SleepHealth</item>
+        <item>DAVID:TermiteInspection</item>
         <item>DAVID:Travel</item>
         <item>DAVID:WaterRates</item>
         <item>DAVID:WorkLunch</item>
         <item>DAVID:WorkShop</item>
+        <item>CLAIRE:Bike</item>
         <item>CLAIRE:Debt</item>
+        <item>CLAIRE:Gift</item>
+        <item>CLAIRE:Tigrettes</item>
+        <item>CLAIRE:Travel</item>
         <item>NINA:Board</item>
+        <item>NINA:Camera</item>
+        <item>NINA:Car</item>
         <item>NINA:Debt</item>
+        <item>NINA:Gift</item>
+        <item>NINA:Hecs</item>
+        <item>NINA:TravelCash</item>
+        <item>RACHEL:Alcohol</item>
+        <item>RACHEL:Cash</item>
+        <item>RACHEL:Clothes</item>
+        <item>RACHEL:Computer</item>
         <item>RACHEL:Cosmetics</item>
+        <item>RACHEL:Course</item>
         <item>RACHEL:Debt</item>
         <item>RACHEL:Gift</item>
+        <item>RACHEL:Medical</item>
+        <item>RACHEL:Money</item>
+        <item>RACHEL:Party</item>
         <item>RACHEL:Phone</item>
+        <item>RACHEL:Travel</item>
         <item>ONEOFFS:Furniture</item>
+        <item>ONEOFFS:Landscaping</item>
     </string-array>
     <string name="spend_amount_label">Amount:</string>
     <string name="spend_ok_label">OK</string>
