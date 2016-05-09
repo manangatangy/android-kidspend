@@ -275,12 +275,21 @@ public class SpendTotals extends FragmentActivity implements LoaderManager.Loade
         return tempAccount;
     }
 
-    public static float getTotalSumOfAccounts(Activity activity, String[] accountNames) {
-        float totalSpend = 0;
+    public static float[] getTotalSumOfAccounts(Activity activity, String[] accountNames) {
+        float[] totalSpends = new float[accountNames.length];
         for (int i = 0; i < accountNames.length; i++) {
-            totalSpend += getTotalAmount(activity, accountNames[i]);
+            totalSpends[i] = getTotalAmount(activity, accountNames[i]);
         }
-        return totalSpend;
+        return totalSpends;
+    }
+
+    public static float getTotalSum(Activity activity, String[] accountNames) {
+        float[] totals = SpendTotals.getTotalSumOfAccounts(activity, accountNames);
+        float sumTotal = 0;
+        for (int i = 0; i < totals.length; i++) {
+            sumTotal += totals[i];
+        }
+        return sumTotal;
     }
 
     public static float getTotalAmount(Activity activity, String accountName) {

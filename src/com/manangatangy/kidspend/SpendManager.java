@@ -53,6 +53,7 @@ public class SpendManager extends Activity implements SuccessfulExportListener {
 
     static final int SEND_KIDSPEND_BACKUP_REQUEST = 1;
     static final int SEND_OISAFE_BACKUP_REQUEST = 2;
+    static final int SEND_SUMMARY_EMAILS = 3;
 
     private Button mAddSpendButton;
     private Button mRepeatButton;
@@ -65,6 +66,7 @@ public class SpendManager extends Activity implements SuccessfulExportListener {
     private long deleteId;
     private int currentAccountIndex = 0;
     private String[] accountArray = {};
+    private float[] totalSpends = {};
 
     /**
      * Called when the activity is first created. Responsible for initializing the UI.
@@ -166,11 +168,26 @@ public class SpendManager extends Activity implements SuccessfulExportListener {
                                 importExport(false, null);
                             }
                         })
-                        .setNeutralButton("Cancel", new DialogInterface.OnClickListener() {
+                        .setNeutralButton("Email summary", new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
-                                dialog.cancel();
+//                                dialog.cancel();
+                                StringBuilder body = new StringBuilder("Hi monkeys,\n\n" +
+                                        "This is the latest summary of\n" +
+                                        "spends which my app will send to\n" +
+                                        "yous automatically every so often,\n" +
+                                        "so that you have an idea of what\n" +
+                                        "your tabs are lol.\n\n" +
+                                        "The current balances are :\n");
+                                for (int i = 0; i < accountArray.length; i++) {
+                                    body.append("    ").append(accountArray[i]).append(" = ").append(totalSpends[i]).append("\n");
+                                }
+                                body.append("\n--\n" +
+                                        "xoxo\n" +
+                                        "daddy-boss\n");
+                                emailSummary(SEND_SUMMARY_EMAILS, "kidspend summary", body.toString());
                             }
-                        }).show();
+                        })
+                        .show();
             }
         });
 
@@ -201,8 +218,14 @@ public class SpendManager extends Activity implements SuccessfulExportListener {
             public static final String LAST_BACKUP_DATE = "Last_Backup_Date";
     public static final String BACKUP_TRIGGER_AMOUNT = "Backup_Trigger_Date";
 
+        for (int i = 0; i < accountNames.length; i++) {
+
          */
-        newTotal = SpendTotals.getTotalSumOfAccounts(this, accountArray);
+        totalSpends = SpendTotals.getTotalSumOfAccounts(this, accountArray);
+        newTotal = 0;
+        for (int i = 0; i < totalSpends.length; i++) {
+            newTotal += totalSpends[i];
+        }
 
         if (Math.abs(newTotal - oldTotal) > backupTriggerAmount) {
             String msg = String.format("Total now: %.0f\nemail backup to\n%s ?\n(last: %s)", newTotal, backupTargetEmail, lastBackupDate);
@@ -260,11 +283,11 @@ public class SpendManager extends Activity implements SuccessfulExportListener {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         // Check which request we're responding to
         if (requestCode == SEND_KIDSPEND_BACKUP_REQUEST) {
-            float newTotal = SpendTotals.getTotalSumOfAccounts(this, accountArray);
+            float sum = SpendTotals.getTotalSum(this, accountArray);
 
             SharedPreferences settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
             SharedPreferences.Editor editor = settings.edit();
-            editor.putFloat(SUM_TOTAL, newTotal);
+            editor.putFloat(SUM_TOTAL, sum);
             String date = sdf1.format(new Date());
             editor.putString(LAST_BACKUP_DATE, date);
             editor.commit();
@@ -278,6 +301,12 @@ public class SpendManager extends Activity implements SuccessfulExportListener {
     }
 
     public static final String backupTargetEmail = "david.x.weiss@gmail.com";
+    public static final String[] summaryTargetEmails = {
+            backupTargetEmail,
+            "claireweiss1988@gmail.com",
+            "nina.e.weiss@hotmail.com",
+            "rachel.weiss26@hotmail.com"
+    };
 
     public void onExport(File[] pathsToExport) {
         doEmail(SEND_KIDSPEND_BACKUP_REQUEST, String.format("kidspend backup ($%.0f)", newTotal), pathsToExport);
@@ -297,6 +326,17 @@ public class SpendManager extends Activity implements SuccessfulExportListener {
 //        startActivityForResult(emailOnlyIntent, SEND_KIDSPEND_BACKUP_REQUEST);
     }
 
+    private void emailSummary(int reqCode, String subject, String body) {
+        Intent i = new Intent(Intent.ACTION_SEND_MULTIPLE);
+        i.setType("*/*");
+        i.putExtra(Intent.EXTRA_EMAIL, summaryTargetEmails);
+        i.putExtra(Intent.EXTRA_SUBJECT, subject);
+        i.putExtra(Intent.EXTRA_TEXT, body);
+        Intent emailOnlyIntent = createEmailOnlyChooserIntent(i, "Send via email");
+        startActivityForResult(emailOnlyIntent, reqCode);
+
+    }
+
     private void doEmail(int reqCode, String subject, File[] pathsToBackup) {
         ArrayList<Uri> uris = new ArrayList<Uri>();
         for (File path : pathsToBackup) {
@@ -308,6 +348,7 @@ public class SpendManager extends Activity implements SuccessfulExportListener {
         i.putExtra(Intent.EXTRA_EMAIL, new String[] { backupTargetEmail });
         i.putExtra(Intent.EXTRA_SUBJECT, subject);
         Intent emailOnlyIntent = createEmailOnlyChooserIntent(i, "Send via email");
+//        i.putExtra(Intent.EXTRA_TEXT, "Some crash report details");
         startActivityForResult(emailOnlyIntent, reqCode);
     }
 
